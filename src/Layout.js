@@ -3,10 +3,8 @@ import { Outlet, useNavigate, Link } from "react-router-dom";
 import NoteList from "./NoteList";
 import { v4 as uuidv4 } from "uuid";
 import { currentDate } from "./utils";
-import { GoogleLogin, googleLogout, useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin, googleLogout } from "@react-oauth/google";
 import axios from "axios";
-
-const localStorageKey = "lotion-v1";
 
 function Layout() {
   const navigate = useNavigate();
@@ -30,8 +28,7 @@ function Layout() {
 
   // GOOGLE REQUIREMENTS
   const [signedIn, setSignedIn] = useState(
-    false
-    // JSON.parse(localStorage.getItem("profile")) ? true : false
+    JSON.parse(localStorage.getItem("profile")) ? true : false
   );
 
   const [user, setUser] = useState(
@@ -53,11 +50,10 @@ function Layout() {
       setSignedIn(true);
       console.log(login);
     },
-
     onError: (error) => console.log("Login Failed:", error),
   });
 
-  /// USE EFFECTS ///
+  // USE EFFECTS
   useEffect(() => {
     if (profile) {
       setAccessToken(user.access_token);
@@ -65,10 +61,8 @@ function Layout() {
       getNotes(profile, user.access_token);
     } else {
       navigate("/");
-      // setAccessToken(null);
-      // setUser([]);
     }
-  }, [profile]);
+  }, [profile, user]);
 
   useEffect(() => {
     if (user && user.access_token) {
@@ -96,12 +90,9 @@ function Layout() {
     console.log("log out");
     setProfile(null);
     setSignedIn(false);
-    // localStorage.removeItem("user");
     localStorage.removeItem("profile");
-    // setUser([]);
   }
 
-  /// FUNCTIONS ///
   const saveNote = async (note, index) => {
     setEditMode(false);
     note.body = note.body.replaceAll("<p><br></p>", "");
@@ -115,54 +106,30 @@ function Layout() {
 
     const email = profile.email;
 
-    //----------------need to work here----------------
     await fetch(
       "https://2cytjwpdvsnqjsghylagwbv6jm0bxvee.lambda-url.ca-central-1.on.aws/",
-      //----------------need to work here----------------
-
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authentication: accessToken,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ ...note, email: email }),
       }
     );
   };
 
-  // const [signedIn, setSignedIn] = useState(
-  //   JSON.parse(localStorage.getItem("profile")) ? true : false
-  // );
-
-  // const [user, setUser] = useState(
-  //   JSON.parse(localStorage.getItem("user"))
-  //     ? JSON.parse(localStorage.getItem("user"))
-  //     : []
-  // );
-
-  // const [profile, setProfile] = useState(
-  //   JSON.parse(localStorage.getItem("profile"))
-  //     ? JSON.parse(localStorage.getItem("profile"))
-  //     : null
-  // );
-
-  const deleteNote = async (index, user) => {
+  const deleteNote = async (index) => {
     const noteId = notes[index];
     const email = profile.email;
 
-    {
-      accessToken ? console.log(accessToken) : console.log("not work");
-    }
-
     await fetch(
       "https://lid7lowxpkn2u37vo34butepke0ljnxr.lambda-url.ca-central-1.on.aws/",
-
       {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authentication: accessToken,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ id: noteId, email: email }),
       }
@@ -180,12 +147,11 @@ function Layout() {
 
     const res = await fetch(
       `https://qlp36h2ljhgcqfxergmgnu4n7q0jxggd.lambda-url.ca-central-1.on.aws/?email=${email}`,
-
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authentication: aToken,
+          Authorization: `Bearer ${aToken}`,
         },
       }
     );
@@ -209,7 +175,7 @@ function Layout() {
 
   return (
     <div id="LoginPage">
-      <header>
+      {/* <header>
         <aside>
           <button id="menu-button" onClick={() => setCollapse(!collapse)}>
             &#9776;
@@ -221,68 +187,52 @@ function Layout() {
           </h1>
           <h6 id="app-moto">Like Notion, but worse.</h6>
         </div>
-        <aside>&nbsp;</aside>s
-      </header>
+        <aside>&nbsp;</aside>
+      </header> */}
       {signedIn ? (
         <div id="sign-in">
-          <button>
-            onClick=
-            {login} Login
-          </button>s
+          <button onClick={login}>Login</button>
         </div>
       ) : (
         <div id="right">
-          {/* <div id="absolute">{signedIn ? profile.email : ""}</div> */}
-          <button
-            // id={signedIn ? "log-out-button" : "log-out-button-hidden"}
-            onClick={logOut}
-          >
-            (Sign out)
-          </button>
+          <button onClick={logOut}>(Sign out)</button>
         </div>
       )}
-    </div>
-  );
-  {
-     <div id="container">
-          <header>
-            <aside>
-              <button id="menu-button" onClick={() => setCollapse(!collapse)}>
-                &#9776;
-              </button> 
-  }
-  {
-    </aside>
-            <div id="app-header">
-              <h1>
-                <Link to="/notes">Lotion</Link>
-              </h1>
-              <h6 id="app-moto">Like Notion, but worse.</h6>
-            </div>
-            
-          </header>
-
-          <div id="main-container" ref={mainContainerRef}>
-            <aside id="sidebar" className={collapse ? "hidden" : null}>
-              <header>
-                <div id="notes-list-heading">
-                  <h2>Notes</h2>
-                  <button id="new-note-button" onClick={addNote}>
-                    +
-                  </button>
-                </div>
-              </header>
-              <div id="notes-holder">
-                <NoteList notes={notes} />
+      <div id="container">
+        <header>
+          <aside>
+            <button id="menu-button" onClick={() => setCollapse(!collapse)}>
+              &#9776;
+            </button>
+          </aside>
+          <div id="app-header">
+            <h1>
+              <Link to="/notes">Lotion</Link>
+            </h1>
+            <h6 id="app-moto">Like Notion, but worse.</h6>
+          </div>
+        </header>
+        <div id="main-container" ref={mainContainerRef}>
+          <aside id="sidebar" className={collapse ? "hidden" : null}>
+            <header>
+              <div id="notes-list-heading">
+                <h2>Notes</h2>
+                <button id="new-note-button" onClick={addNote}>
+                  +
+                </button>
               </div>
-            </aside>
-            <div id="write-box">
-              <Outlet context={[notes, saveNote, deleteNote]} />
+            </header>
+            <div id="notes-holder">
+              <NoteList notes={notes} />
             </div>
+          </aside>
+          <div id="write-box">
+            <Outlet context={[notes, saveNote, deleteNote]} />
           </div>
         </div>
-      )}
-    </div> 
-  }
+      </div>
+    </div>
+  );
 }
+
 export default Layout;
